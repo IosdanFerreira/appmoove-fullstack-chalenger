@@ -5,7 +5,7 @@ import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class WeatherApi {
-  private readonly baseUrl = 'http://api.weatherapi.com/v1/current.json';
+  private readonly baseUrl = 'http://api.weatherapi.com/v1/forecast.json';
 
   constructor(
     private readonly httpService: HttpService,
@@ -15,7 +15,7 @@ export class WeatherApi {
   async getWeatherByCoordinates(city: string): Promise<any> {
     const apiKey = this.configService.get<string>('WEATHER_API_KEY');
 
-    const url = `${this.baseUrl}?key=${apiKey}&q=${city}&lang=pt`;
+    const url = `${this.baseUrl}?key=${apiKey}&q=${city}&hour_fields=temp_c,wind_mph`;
 
     const response$ = this.httpService.get(url);
 
