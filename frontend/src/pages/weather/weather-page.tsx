@@ -20,136 +20,64 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { format, parseISO } from "date-fns";
+import { useEffect, useState } from "react";
 
+import { AutocompleteDropdown } from "./components/auto-complete-dropdown";
 import { Card } from "@/components/ui/card";
 import EyeIcon from "./components/even-icon";
 import WeatherCard from "./components/weather-card";
 import WeatherDetail from "./components/weather-detail";
-import { format } from "date-fns";
+import { getCities } from "@brazilian-utils/brazilian-utils";
 import getUvIndexLevel from "./components/get-uv-index-level";
 import { getWeatherByCity } from "../../api/modules/weather/get-weather";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 
-const brazilianCities = [
-  "São Paulo",
-  "Rio de Janeiro",
-  "Belo Horizonte",
-  "Salvador",
-  "Curitiba",
-  "Fortaleza",
-  "Brasília",
-  "Manaus",
-  "Porto Alegre",
-  "Recife",
-  "Goiânia",
-  "Belém",
-  "São Luís",
-  "Maceió",
-  "Natal",
-  "Campo Grande",
-  "Teresina",
-  "João Pessoa",
-  "Aracaju",
-  "Cuiabá",
-  "Florianópolis",
-  "Palmas",
-  "Macapá",
-  "Boa Vista",
-  "Vitória",
-  "Campinas",
-  "Guarulhos",
-  "São Bernardo do Campo",
-  "Osasco",
-  "Santo André",
-  "São José dos Campos",
-  "Ribeirão Preto",
-  "Uberlândia",
-  "Sorocaba",
-  "Contagem",
-  "Feira de Santana",
-  "Joinville",
-  "Juiz de Fora",
-  "Londrina",
-  "Niterói",
-  "Serra",
-  "Ananindeua",
-  "Belford Roxo",
-  "Campos dos Goytacazes",
-  "Caxias do Sul",
-  "São João de Meriti",
-  "Aparecida de Goiânia",
-  "Mauá",
-  "Canoas",
-  "Vila Velha",
-  "São José do Rio Preto",
-  "Mogi das Cruzes",
-  "Betim",
-  "Santos",
-  "Diadema",
-  "Jundiaí",
-  "Carapicuíba",
-  "Piracicaba",
-  "Campina Grande",
-  "Olinda",
-  "Itaquaquecetuba",
-  "Franca",
-  "Blumenau",
-  "Petrópolis",
-  "Paulista",
-  "Vitória da Conquista",
-  "Praia Grande",
-  "Caucaia",
-  "Ilhéus",
-  "Maringá",
-  "Novo Hamburgo",
-  "Rondonópolis",
-  "Pelotas",
-  "Itabuna",
-  "Crato",
-  "Boa Vista",
-  "Camaçari",
-  "Taboão da Serra",
-  "Barueri",
-  "Várzea Grande",
-  "Volta Redonda",
-  "Santa Maria",
-  "Governador Valadares",
-  "Suzano",
-  "São Vicente",
-  "Taubaté",
-  "Petrolina",
-  "Alvorada",
-  "Rio Branco",
-  "Marabá",
-  "Parnamirim",
-  "Itaboraí",
-  "Palhoça",
-  "Linhares",
-  "Araguaína",
-  "Jequié",
-  "Arapiraca",
-  "Dourados",
-  "Itapevi",
-  "Itajaí",
-  "Castanhal",
-  "Passo Fundo",
-  "Patos de Minas",
-  "Rio Verde",
-  "Teófilo Otoni",
-];
+const brazilianCities = getCities();
 
 export function WeatherPage() {
   const [city, setCity] = useState("São Paulo");
   const [selectedDay, setSelectedDay] = useState(0);
+
+  useEffect(() => {
+    if (!city) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+            );
+            const data = await res.json();
+
+            if (data.address && data.address.city) {
+              const cityName = data.address.city;
+              if (brazilianCities.includes(cityName)) {
+                setCity(cityName);
+              } else if (
+                data.address.town &&
+                brazilianCities.includes(data.address.town)
+              ) {
+                setCity(data.address.town);
+              } else if (
+                data.address.village &&
+                brazilianCities.includes(data.address.village)
+              ) {
+                setCity(data.address.village);
+              }
+            }
+          } catch (error) {
+            console.error("Erro ao obter cidade por coordenadas:", error);
+          }
+        },
+        (error) => {
+          console.warn("Permissão de localização negada ou erro:", error);
+        }
+      );
+    }
+  }, []);
 
   const {
     data: weather,
@@ -231,18 +159,11 @@ export function WeatherPage() {
         </h1>
 
         <div className="w-full sm:w-64">
-          <Select value={city} onValueChange={setCity}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione uma cidade" />
-            </SelectTrigger>
-            <SelectContent>
-              {brazilianCities.map((city) => (
-                <SelectItem key={city} value={city}>
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <AutocompleteDropdown
+            options={brazilianCities}
+            value={city}
+            onChange={setCity}
+          />
         </div>
       </div>
 
@@ -256,28 +177,29 @@ export function WeatherPage() {
                 {location.name}, {location.region}
               </h2>
               <span className="text-sm text-gray-500 ml-auto">
-                {format(new Date(location.localtime), "PPPP", { locale: ptBR })}
+                {format(new Date(location.localtime), "dd/MM/yyyy")}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-5xl font-bold mt-1">{current.temp_c}°C</p>
-                <p className="text-gray-600 capitalize">
-                  {current.condition.text}
-                </p>
+                <div className="flex items-center gap-1">
+                  {current.condition.icon && (
+                    <img
+                      src={`https:${current.condition.icon}`}
+                      alt={current.condition.text}
+                      className="h-6 w-6"
+                    />
+                  )}
+                  <p className="text-gray-600 capitalize">
+                    {current.condition.text}
+                  </p>
+                </div>
                 <p className="text-sm text-gray-500 mt-2">
                   Sensação: {current.feelslike_c}°C
                 </p>
               </div>
-
-              {current.condition.icon && (
-                <img
-                  src={`https:${current.condition.icon}`}
-                  alt={current.condition.text}
-                  className="h-24 w-24"
-                />
-              )}
             </div>
           </div>
 
@@ -313,22 +235,6 @@ export function WeatherPage() {
             <h3 className="text-lg font-semibold text-gray-800">
               Variação de Temperatura
             </h3>
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-gray-500" />
-              <select
-                value={selectedDay}
-                onChange={(e) => setSelectedDay(Number(e.target.value))}
-                className="bg-transparent text-sm border-none focus:ring-0"
-              >
-                {weather.weatherData.forecast.forecastday.map((day, index) => (
-                  <option key={day.date} value={index}>
-                    {format(new Date(day.date), "EEEE, d MMM", {
-                      locale: ptBR,
-                    })}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           <div className="h-64">
@@ -379,10 +285,7 @@ export function WeatherPage() {
           {/* Previsão do Dia */}
           <Card className="p-6 md:col-span-2">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Previsão para{" "}
-              {format(new Date(forecastDay.date), "EEEE, d MMMM", {
-                locale: ptBR,
-              })}
+              Previsão para {format(parseISO(forecastDay.date), "dd/MM/yyyy")}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <WeatherCard

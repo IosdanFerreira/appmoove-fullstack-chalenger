@@ -79,12 +79,6 @@ WEATHER_API_KEY=7fe3eb04759e45e4a87162246253007
 
 ```
 
-3.  **Conceda as permissões ao aquivo entrypoint.sh:**
-
-```bash
-chmod +x .docker/entrypoint.sh
-```
-
 **Rode os comando docker:**
 
 ```bash
