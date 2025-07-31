@@ -87,7 +87,7 @@ export function WeatherPage() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["weather", normalizeCityName(city)],
+    queryKey: ["weather", city],
     queryFn: () => getWeatherByCity(city),
     enabled: !!city,
   });
