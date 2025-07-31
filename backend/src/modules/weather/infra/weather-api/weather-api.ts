@@ -15,7 +15,7 @@ export class WeatherApi {
   async getWeatherByCoordinates(city: string): Promise<any> {
     const apiKey = this.configService.get<string>('WEATHER_API_KEY');
 
-    const url = `${this.baseUrl}?key=${apiKey}&q=${city}&hour_fields=temp_c,wind_mph`;
+    const url = `${this.baseUrl}?key=${apiKey}&q=${encodeURIComponent(city)}&hour_fields=temp_c,wind_mph`;
 
     const response$ = this.httpService.get(url);
 

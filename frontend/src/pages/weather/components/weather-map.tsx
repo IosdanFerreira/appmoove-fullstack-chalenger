@@ -8,20 +8,15 @@ interface WeatherMapProps {
   latitude: number;
   longitude: number;
   cityName: string;
-  onCityDetected?: (city: string) => void;
 }
 
-const WeatherMap = ({
-  latitude,
-  longitude,
-  cityName,
-  onCityDetected,
-}: WeatherMapProps) => {
+const WeatherMap = ({ latitude, longitude, cityName }: WeatherMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Inicializa o mapa uma vez
       if (!mapRef.current) {
         mapRef.current = L.map("map").setView([latitude, longitude], 10);
 
@@ -29,44 +24,22 @@ const WeatherMap = ({
           attribution:
             '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(mapRef.current);
-
-        mapRef.current.on("click", async (e: L.LeafletMouseEvent) => {
-          const { lat, lng } = e.latlng;
-
-          try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-            );
-            const data = await response.json();
-
-            const detectedCity =
-              data.address.city ||
-              data.address.town ||
-              data.address.village ||
-              data.address.county ||
-              "";
-
-            if (detectedCity && onCityDetected) {
-              onCityDetected(detectedCity);
-            }
-          } catch (err) {
-            console.error("Erro ao detectar cidade:", err);
-          }
-        });
       }
 
       const customIcon = L.divIcon({
-        html: `<div class="bg-blue-600 text-white p-2 rounded-full border-2 border-white shadow-lg">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                   <circle cx="12" cy="10" r="3"></circle>
-                 </svg>
-               </div>`,
+        html: `
+    <div class="bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center" style="width:40px; height:40px; border: 2px solid white;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+        <circle cx="12" cy="10" r="3" />
+      </svg>
+    </div>`,
         className: "",
         iconSize: [40, 40],
         iconAnchor: [20, 40],
       });
 
+      // Cria ou atualiza marcador
       if (markerRef.current) {
         markerRef.current.setLatLng([latitude, longitude]);
       } else {
@@ -87,9 +60,9 @@ const WeatherMap = ({
         markerRef.current = null;
       }
     };
-  }, [latitude, longitude, cityName, onCityDetected]);
+  }, [latitude, longitude, cityName]);
 
-  return <div id="map" className="h-full w-full" />;
+  return <div id="map" className="h-[400px] w-full" />;
 };
 
 export default WeatherMap;

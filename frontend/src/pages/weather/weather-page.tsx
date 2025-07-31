@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import {
   AlertTriangle,
-  CalendarDays,
   CloudRain,
   CloudSun,
   Droplets,
@@ -28,10 +29,11 @@ import { Card } from "@/components/ui/card";
 import EyeIcon from "./components/even-icon";
 import WeatherCard from "./components/weather-card";
 import WeatherDetail from "./components/weather-detail";
+import WeatherMap from "./components/weather-map";
 import { getCities } from "@brazilian-utils/brazilian-utils";
 import getUvIndexLevel from "./components/get-uv-index-level";
 import { getWeatherByCity } from "../../api/modules/weather/get-weather";
-import { ptBR } from "date-fns/locale";
+import { normalizeCityName } from "./utils/normalize-city-name";
 import { useQuery } from "@tanstack/react-query";
 
 const brazilianCities = getCities();
@@ -85,7 +87,7 @@ export function WeatherPage() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["weather", city],
+    queryKey: ["weather", normalizeCityName(city)],
     queryFn: () => getWeatherByCity(city),
     enabled: !!city,
   });
@@ -227,6 +229,12 @@ export function WeatherPage() {
           </div>
         </div>
       </Card>
+
+      <WeatherMap
+        latitude={location.lat}
+        longitude={location.lon}
+        cityName={location.name}
+      />
 
       {/* Gráfico de Temperatura - Só renderiza se houver dados */}
       {temperatureData.length > 0 && (
